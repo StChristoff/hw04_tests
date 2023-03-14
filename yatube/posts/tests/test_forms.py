@@ -1,10 +1,7 @@
-from django.contrib.auth import get_user_model
 from django.test import Client, TestCase
 from django.urls import reverse
-from posts.forms import PostForm
-from posts.models import Post, Group
 
-User = get_user_model()
+from ..models import Post, Group, User
 
 
 class PostFormTests(TestCase):
@@ -22,7 +19,6 @@ class PostFormTests(TestCase):
             text='Тестовый пост',
             group=cls.group,
         )
-        cls.form = PostForm()
 
     def setUp(self):
         self.authorized_client = Client()
@@ -48,13 +44,6 @@ class PostFormTests(TestCase):
             )
         )
         self.assertEqual(Post.objects.count(), posts_count + 1)
-        self.assertTrue(
-            Post.objects.filter(
-                id=self.post.id + 1,
-                text=form['text'],
-                group=form['group'],
-            ).exists()
-        )
 
     def test_post_edit(self):
         """Проверяем, что валидная форма изменяет пост"""

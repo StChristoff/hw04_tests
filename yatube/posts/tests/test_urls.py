@@ -1,18 +1,16 @@
-from django.contrib.auth import get_user_model
 from django.test import TestCase, Client
 
-from posts.models import Post, Group
+from http import HTTPStatus
 
-User = get_user_model()
-
-INDEX_URL = '/'
-CREATE_URL = '/create/'
+from posts.models import Post, Group, User
 
 
 class PostURLTests(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        cls.INDEX_URL = '/'
+        cls.CREATE_URL = '/create/'
         cls.user = User.objects.create_user(username='auth')
         cls.user_2 = User.objects.create_user(username='User2')
         cls.group = Group.objects.create(
@@ -38,30 +36,35 @@ class PostURLTests(TestCase):
         self.authorized_client_2.force_login(PostURLTests.user_2)
 
     def test_urls_exists_at_desired_location_guest(self):
-        """Страницы доступны любому пользователя."""
+        """Проверяем доступ к страницам, доступным любому пользователю."""
         response_list = (
-            INDEX_URL, PostURLTests.group_url,
+            PostURLTests.INDEX_URL, PostURLTests.group_url,
             PostURLTests.post_url, PostURLTests.profile_url,
         )
         for slug in response_list:
             with self.subTest(slug=slug):
                 response = self.guest_client.get(slug)
-                self.assertEqual(response.status_code, 200)
+                self.assertEqual(response.status_code, HTTPStatus.OK)
 
     def test_urls_exists_at_desired_location_auth(self):
-        """Страницы доступны авторизованному пользователю."""
-        response_list = (CREATE_URL, PostURLTests.post_edit_url)
+        """Проверяем доступ к страницам, доступным авторизованному
+        пользователю."""
+        response_list = (
+            PostURLTests.CREATE_URL,
+            PostURLTests.post_edit_url
+        )
         for slug in response_list:
             with self.subTest(slug=slug):
                 response = self.authorized_client.get(slug)
-                self.assertEqual(response.status_code, 200)
+                self.assertEqual(response.status_code, HTTPStatus.OK)
 
     def test_urls_redirect_anonymous_on_admin_login(self):
-        """Ссылка перенаправит анонимного пользователя
-        на страницу логина.
+        """Проверяем переадресацию для анонимного пользователя
+        с приватных страниц.
         """
         response_list = {
-            CREATE_URL: '/auth/login/?next=' + CREATE_URL,
+            PostURLTests.CREATE_URL:
+            '/auth/login/?next=' + PostURLTests.CREATE_URL,
             PostURLTests.post_edit_url:
             '/auth/login/?next=' + PostURLTests.post_edit_url,
         }
@@ -71,21 +74,21 @@ class PostURLTests(TestCase):
                 self.assertRedirects(response, redir_slug)
 
     def test_url_redirect_authorized_on_post_detail(self):
-        """Ссылка перенаправит авторизованного пользователя, не являющегося
-         автором поста на post_detail"""
+        """Проверяем переадресацию для авторизованного пользователя,
+        не являющегося автором поста на post_detail"""
         response = self.authorized_client_2.get(
             PostURLTests.post_edit_url, follow=True
         )
         self.assertRedirects(response, PostURLTests.post_url)
 
     def test_urls_uses_correct_template(self):
-        """URL-адрес использует соответствующий шаблон."""
+        """Проверяем, что URL-адрес использует соответствующий шаблон."""
         url_names_templates = {
-            INDEX_URL: 'posts/index.html',
+            PostURLTests.INDEX_URL: 'posts/index.html',
             PostURLTests.group_url: 'posts/group_list.html',
             PostURLTests.post_url: 'posts/post_detail.html',
             PostURLTests.profile_url: 'posts/profile.html',
-            CREATE_URL: 'posts/create_post.html',
+            PostURLTests.CREATE_URL: 'posts/create_post.html',
             PostURLTests.post_edit_url: 'posts/create_post.html',
         }
         for url, template in url_names_templates.items():
@@ -94,5 +97,6 @@ class PostURLTests(TestCase):
                 self.assertTemplateUsed(response, template)
 
     def test_urls_unexisting_page(self):
+        """Проверяем, что не существующая страница вызывает ошибку 404."""
         response = self.guest_client.get('/unexisting_page/')
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)

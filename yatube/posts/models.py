@@ -3,6 +3,8 @@ from django.contrib.auth import get_user_model
 
 User = get_user_model()
 
+SYM_NUM = 15
+
 
 class Post(models.Model):
     text = models.TextField(verbose_name='Текст поста')
@@ -29,7 +31,7 @@ class Post(models.Model):
         ordering = ['-pub_date']
 
     def __str__(self):
-        return self.text
+        return self.text[:SYM_NUM]
 
 
 class Group(models.Model):
