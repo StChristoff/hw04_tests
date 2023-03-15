@@ -7,7 +7,9 @@ SYM_NUM = 15
 
 
 class Post(models.Model):
-    text = models.TextField(verbose_name='Текст поста')
+    text = models.TextField(
+        verbose_name='Текст поста',
+        help_text='Введите текст поста',)
     pub_date = models.DateTimeField(
         auto_now_add=True,
         verbose_name='Дата публикации',
@@ -25,10 +27,19 @@ class Post(models.Model):
         on_delete=models.SET_NULL,
         related_name='posts',
         verbose_name='Группа',
+        help_text='Выберите группу'
     )
+    image = models.ImageField(
+        verbose_name='Картинка',
+        help_text='Загрузите картинку'
+        upload_to='posts/',
+        blank=True
+    )  
 
     class Meta:
-        ordering = ['-pub_date']
+        ordering = ('-pub_date',)
+        verbose_name = 'Пост'
+        verbose_name_plural = 'Посты'
 
     def __str__(self):
         return self.text[:SYM_NUM]
