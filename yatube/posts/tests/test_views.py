@@ -1,11 +1,18 @@
+import shutil
+import tempfile
+
 from django import forms
 from django.conf import settings
-from django.test import Client, TestCase
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 
 from posts.models import Group, Post, User
 
+TEMP_MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR)
 
+
+@override_settings(MEDIA_ROOT=TEMP_MEDIA_ROOT)
 class PostsViewsTests(TestCase):
     @classmethod
     def setUpClass(cls):
@@ -16,8 +23,23 @@ class PostsViewsTests(TestCase):
             slug='test-slug',
             description='Тестовое описание',
         )
+        cls.small_gif = (
+            b'\x47\x49\x46\x38\x39\x61\x01\x00'
+            b'\x01\x00\x00\x00\x00\x21\xf9\x04'
+            b'\x01\x0a\x00\x01\x00\x2c\x00\x00'
+            b'\x00\x00\x01\x00\x01\x00\x00\x02'
+            b'\x02\x4c\x01\x00\x3b'
+        )
+        cls.uploaded = SimpleUploadedFile(
+            name='small.gif',
+            content=cls.small_gif,
+            content_type='image/gif'
+        )
         cls.test_post = Post.objects.create(
-            author=cls.user, text='Тестовый пост', group=cls.group,
+            author=cls.user,
+            text='Тестовый пост',
+            group=cls.group,
+            image=cls.uploaded,
         )
         cls.NAME_TEMPL = {
             'INDEX': (reverse('posts:index'), 'posts/index.html'),
@@ -51,6 +73,11 @@ class PostsViewsTests(TestCase):
                 'posts/create_post.html',
             ),
         }
+
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        shutil.rmtree(TEMP_MEDIA_ROOT, ignore_errors=True)
 
     def setUp(self):
         self.authorized_client = Client()
@@ -167,21 +194,23 @@ class PostsViewsTests(TestCase):
         )
 
     def response_processing_post(self, response):
-        if 'post' in response:
-            post = response.context['post']
-            self.assertIsInstance(post, Post)
-            self.assertEqual(post, PostsViewsTests.test_post)
-        elif 'page_obj' in response:
+        if 'page_obj' in response.context:
             post = response.context['page_obj'][0]
-            self.assertIsInstance(post, Post)
-            self.assertEqual(post.text, PostsViewsTests.test_post.text)
-            self.assertEqual(post.group, PostsViewsTests.test_post.group)
-            self.assertEqual(post.author, PostsViewsTests.test_post.author)
+        elif 'post' in response.context:
+            post = response.context['post']
+        else:
+            return
+        self.assertIsInstance(post, Post)
+        self.assertEqual(post.text, PostsViewsTests.test_post.text)
+        self.assertEqual(post.group, PostsViewsTests.test_post.group)
+        self.assertEqual(post.author, PostsViewsTests.test_post.author)
+        self.assertEqual(post.image, PostsViewsTests.test_post.image)
 
     def response_processing_form(self, response):
         form_fields = {
             'text': forms.fields.CharField,
             'group': forms.fields.ChoiceField,
+            'image': forms.fields.ImageField,
         }
         for field, expected_field in form_fields.items():
             with self.subTest(field=field):
