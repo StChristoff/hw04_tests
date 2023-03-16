@@ -34,7 +34,7 @@ class Post(models.Model):
         help_text='Загрузите картинку',
         upload_to='posts/',
         blank=True,
-    )  
+    )
 
     class Meta:
         ordering = ('-pub_date',)
@@ -66,7 +66,7 @@ class Group(models.Model):
 
     def __str__(self):
         return self.title
-    
+
 
 class Comment(models.Model):
     text = models.TextField(

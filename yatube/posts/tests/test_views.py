@@ -7,7 +7,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 
-from posts.models import Group, Post, User
+from posts.models import Group, Post, User, Comment
 
 TEMP_MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR)
 
@@ -17,6 +17,7 @@ class PostsViewsTests(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        cls.NUM_ADD_POSTS = 5
         cls.user = User.objects.create_user(username='auth')
         cls.group = Group.objects.create(
             title='Тестовая группа',
@@ -170,12 +171,15 @@ class PostsViewsTests(TestCase):
 
     def test_index_paginator(self):
         """Проверяем разбивку на страницы паджинатором."""
+        Post.objects.all().delete()
         objs = [
             Post(
                 author=PostsViewsTests.user,
                 text='Тестовый пост',
                 group=PostsViewsTests.group,
-            ) for _ in range(settings.POSTS_PER_PAGE)
+            ) for _ in range(
+                settings.POSTS_PER_PAGE + PostsViewsTests.NUM_ADD_POSTS
+            )
         ]
         Post.objects.bulk_create(objs)
         response = self.authorized_client.get(
@@ -190,7 +194,7 @@ class PostsViewsTests(TestCase):
         )
         self.assertEqual(
             len(response.context['page_obj']),
-            (Post.objects.count() - settings.POSTS_PER_PAGE)
+            PostsViewsTests.NUM_ADD_POSTS
         )
 
     def response_processing_post(self, response):
@@ -216,3 +220,16 @@ class PostsViewsTests(TestCase):
             with self.subTest(field=field):
                 form_field = response.context.get('form').fields.get(field)
                 self.assertIsInstance(form_field, expected_field)
+
+    def test_created_comment_show_on_post_detail(self):
+        """Проверяем, что после успешной отправки комментарий
+        появляется на странице поста"""
+        comment = Comment.objects.create(
+            text='Тестовый комментарий',
+            post=PostsViewsTests.test_post,
+            author=PostsViewsTests.user,
+        )
+        response = self.authorized_client.get(
+            PostsViewsTests.NAME_TEMPL['DETAIL'][0]
+        )
+        self.assertIn(comment, response.context['comments'])

@@ -9,8 +9,8 @@ class PostURLTests(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.INDEX_URL = '/'
-        cls.CREATE_URL = '/create/'
+        cls.index_url = '/'
+        cls.create_url = '/create/'
         cls.user = User.objects.create_user(username='auth')
         cls.user_2 = User.objects.create_user(username='User2')
         cls.group = Group.objects.create(
@@ -27,6 +27,7 @@ class PostURLTests(TestCase):
         cls.post_url = f'/posts/{cls.post.id}/'
         cls.post_edit_url = f'/posts/{cls.post.id}/edit/'
         cls.group_url = f'/group/{cls.group.slug}/'
+        cls.comment_url = f'/posts/{cls.post.id}/comment/'
 
     def setUp(self):
         self.guest_client = Client()
@@ -38,7 +39,7 @@ class PostURLTests(TestCase):
     def test_urls_exists_at_desired_location_guest(self):
         """Проверяем доступ к страницам, доступным любому пользователю."""
         response_list = (
-            PostURLTests.INDEX_URL, PostURLTests.group_url,
+            PostURLTests.index_url, PostURLTests.group_url,
             PostURLTests.post_url, PostURLTests.profile_url,
         )
         for slug in response_list:
@@ -50,7 +51,7 @@ class PostURLTests(TestCase):
         """Проверяем доступ к страницам, доступным авторизованному
         пользователю."""
         response_list = (
-            PostURLTests.CREATE_URL,
+            PostURLTests.create_url,
             PostURLTests.post_edit_url
         )
         for slug in response_list:
@@ -63,10 +64,12 @@ class PostURLTests(TestCase):
         с приватных страниц.
         """
         response_list = {
-            PostURLTests.CREATE_URL:
-            '/auth/login/?next=' + PostURLTests.CREATE_URL,
+            PostURLTests.create_url:
+            '/auth/login/?next=' + PostURLTests.create_url,
             PostURLTests.post_edit_url:
             '/auth/login/?next=' + PostURLTests.post_edit_url,
+            PostURLTests.comment_url:
+            '/auth/login/?next=' + PostURLTests.comment_url,
         }
         for slug, redir_slug in response_list.items():
             with self.subTest(slug=slug):
@@ -84,11 +87,11 @@ class PostURLTests(TestCase):
     def test_urls_uses_correct_template(self):
         """Проверяем, что URL-адрес использует соответствующий шаблон."""
         url_names_templates = {
-            PostURLTests.INDEX_URL: 'posts/index.html',
+            PostURLTests.index_url: 'posts/index.html',
             PostURLTests.group_url: 'posts/group_list.html',
             PostURLTests.post_url: 'posts/post_detail.html',
             PostURLTests.profile_url: 'posts/profile.html',
-            PostURLTests.CREATE_URL: 'posts/create_post.html',
+            PostURLTests.create_url: 'posts/create_post.html',
             PostURLTests.post_edit_url: 'posts/create_post.html',
         }
         for url, template in url_names_templates.items():
@@ -100,3 +103,10 @@ class PostURLTests(TestCase):
         """Проверяем, что не существующая страница вызывает ошибку 404."""
         response = self.guest_client.get('/unexisting_page/')
         self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
+
+    def test_redirect_created_comment_on_post_detail(self):
+        """Проверяем переадресацию после создания комментария на post_detail"""
+        response = self.authorized_client.get(
+            PostURLTests.comment_url, follow=True
+        )
+        self.assertRedirects(response, PostURLTests.post_url)

@@ -1,7 +1,11 @@
+# Все закомментированное - для 6 спринта, не считай, пожалуйста за ошибку.
+# Просто иначе pytest не проходит, т.к. в форме ожидается только 2 аргумента.
+
 import shutil
 import tempfile
 
 from django.conf import settings
+
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, TestCase, override_settings
 from django.urls import reverse

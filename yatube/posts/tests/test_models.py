@@ -25,15 +25,13 @@ class PostModelTest(TestCase):
     def test_models_have_correct_object_names(self):
         """Проверяем, что у моделей корректно работает __str__."""
         object_names = {
-            PostModelTest.post: PostModelTest.POST_TEXT,
+            PostModelTest.post:
+            PostModelTest.POST_TEXT[:PostModelTest.SYM_NUM],
             PostModelTest.group: PostModelTest.GROUP_TITLE,
         }
         for value, expected_object_name in object_names.items():
             with self.subTest(value=value):
-                self.assertEqual(
-                    expected_object_name[:PostModelTest.SYM_NUM],
-                    str(value)
-                )
+                self.assertEqual(expected_object_name, str(value))
 
     def test_post_verbose_names(self):
         """verbose_name поста в поле модели совпадает с ожидаемым."""
@@ -82,8 +80,10 @@ class PostModelTest(TestCase):
         """help_text в полях модели group совпадает с ожидаемым."""
         field_help_texts = {
             'title': 'Введите имя группы',
-            'slug': ('Укажите адрес для страницы группы. Используйте только '
-            'латиницу, цифры, дефисы и знаки подчёркивания'),
+            'slug': (
+                'Укажите адрес для страницы группы. Используйте только '
+                'латиницу, цифры, дефисы и знаки подчёркивания'
+            ),
             'description': 'Введите описание группы',
         }
         for value, expected in field_help_texts.items():
