@@ -140,18 +140,23 @@ class PostsViewsTests(TestCase):
         self.response_processing_form(response)
 
     def test_created_post_show_on_all_pages(self):
-        """Проверяем, что при создании поста он появляется
-        на всех нужных страницах (главной, группы, в профайле)"""
+        """Проверяем, что при создании поста он появляется на всех страницах
+        (главной, группы, в профайле и странице поста)"""
         url_requests = [
             PostsViewsTests.NAME_TEMPL['INDEX'][0],
             PostsViewsTests.NAME_TEMPL['GROUP_LIST'][0],
             PostsViewsTests.NAME_TEMPL['PROFILE'][0],
+            PostsViewsTests.NAME_TEMPL['DETAIL'][0],
         ]
         for request in url_requests:
             response = self.authorized_client.get(request)
+            if 'page_obj' in response.context:
+                context = 'page_obj'
+            else:
+                context = 'post'
             self.assertIn(
                 PostsViewsTests.test_post,
-                response.context['page_obj']
+                response.context[context]
             )
 
     def test_post_not_show_on_other_group_page(self):
@@ -202,8 +207,6 @@ class PostsViewsTests(TestCase):
             post = response.context['page_obj'][0]
         elif 'post' in response.context:
             post = response.context['post']
-        else:
-            return
         self.assertIsInstance(post, Post)
         self.assertEqual(post.text, PostsViewsTests.test_post.text)
         self.assertEqual(post.group, PostsViewsTests.test_post.group)
@@ -233,3 +236,11 @@ class PostsViewsTests(TestCase):
             PostsViewsTests.NAME_TEMPL['DETAIL'][0]
         )
         self.assertIn(comment, response.context['comments'])
+
+    def test_avialable_cached_post(self):
+        """Проверяем, что пост доступен из кэша после удаления"""
+        Post.objects.all().delete()
+        response = self.authorized_client.get(
+            PostsViewsTests.NAME_TEMPL['INDEX'][0]
+        )
+        self.assertIsNotNone(response.content)

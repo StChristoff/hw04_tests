@@ -26,11 +26,9 @@ urlpatterns = [
     path('admin/', admin.site.urls),
 ]
 
-# Михаил, не считай, пожалуйста, за ошибку. handler'ы для 6 спринта.
-# Просто пока не работает, и я еще не разобрался почему.
-# handler404 = 'core.views.page_not_found'
-# handler500 = 'core.views.server_error'
-# handler403 = 'core.views.permission_denied'
+handler404 = 'core.views.page_not_found'
+handler500 = 'core.views.server_error'
+handler403 = 'core.views.permission_denied'
 
 if settings.DEBUG:
     urlpatterns += static(

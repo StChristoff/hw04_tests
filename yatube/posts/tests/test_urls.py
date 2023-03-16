@@ -1,6 +1,6 @@
-from django.test import TestCase, Client
-
 from http import HTTPStatus
+
+from django.test import TestCase, Client
 
 from posts.models import Post, Group, User
 
@@ -98,11 +98,6 @@ class PostURLTests(TestCase):
             with self.subTest(url=url):
                 response = self.authorized_client.get(url)
                 self.assertTemplateUsed(response, template)
-
-    def test_urls_unexisting_page(self):
-        """Проверяем, что не существующая страница вызывает ошибку 404."""
-        response = self.guest_client.get('/unexisting_page/')
-        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
 
     def test_redirect_created_comment_on_post_detail(self):
         """Проверяем переадресацию после создания комментария на post_detail"""

@@ -96,3 +96,26 @@ class Comment(models.Model):
 
     def __str__(self):
         return self.text[:SYM_NUM]
+
+
+class Follow(models.Model):
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='follower',
+        verbose_name='Пользователь',
+    )
+    author = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='following',
+        verbose_name='Автор',
+    )
+
+    class Meta:
+        ordering = ('author',)
+        verbose_name = 'Подписка'
+        verbose_name_plural = 'Подписки'
+
+    def __str__(self):
+        return f'Подписка на {self.author}'
