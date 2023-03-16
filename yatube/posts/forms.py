@@ -7,7 +7,8 @@ class PostForm(forms.ModelForm):
 
     class Meta:
         model = Post
-        fields = ('text',
+        fields = (
+            'text',
             'group',
             # Это для 6 спринта, не считай, пожалуйста за ошибку.
             # Иначе pytest не проходит, т.к. в форме ожидается

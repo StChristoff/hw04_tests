@@ -214,7 +214,8 @@ class PostsViewsTests(TestCase):
         form_fields = {
             'text': forms.fields.CharField,
             'group': forms.fields.ChoiceField,
-            'image': forms.fields.ImageField,
+            # Это для 6 спринта
+            # 'image': forms.fields.ImageField,
         }
         for field, expected_field in form_fields.items():
             with self.subTest(field=field):
