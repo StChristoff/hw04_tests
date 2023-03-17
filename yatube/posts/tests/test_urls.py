@@ -11,6 +11,7 @@ class PostURLTests(TestCase):
         super().setUpClass()
         cls.index_url = '/'
         cls.create_url = '/create/'
+        cls.follow_index_url = '/follow/'
         cls.user = User.objects.create_user(username='auth')
         cls.user_2 = User.objects.create_user(username='User2')
         cls.group = Group.objects.create(
@@ -28,6 +29,8 @@ class PostURLTests(TestCase):
         cls.post_edit_url = f'/posts/{cls.post.id}/edit/'
         cls.group_url = f'/group/{cls.group.slug}/'
         cls.comment_url = f'/posts/{cls.post.id}/comment/'
+        cls.follow_url = f'/profile/{cls.user.username}/follow/'
+        cls.unfollow_url = f'/profile/{cls.user.username}/unfollow/'
 
     def setUp(self):
         self.guest_client = Client()
@@ -52,7 +55,7 @@ class PostURLTests(TestCase):
         пользователю."""
         response_list = (
             PostURLTests.create_url,
-            PostURLTests.post_edit_url
+            PostURLTests.post_edit_url,
         )
         for slug in response_list:
             with self.subTest(slug=slug):
@@ -70,6 +73,12 @@ class PostURLTests(TestCase):
             '/auth/login/?next=' + PostURLTests.post_edit_url,
             PostURLTests.comment_url:
             '/auth/login/?next=' + PostURLTests.comment_url,
+            PostURLTests.follow_url:
+            '/auth/login/?next=' + PostURLTests.follow_url,
+            PostURLTests.unfollow_url:
+            '/auth/login/?next=' + PostURLTests.unfollow_url,
+            PostURLTests.follow_index_url:
+            '/auth/login/?next=' + PostURLTests.follow_index_url,
         }
         for slug, redir_slug in response_list.items():
             with self.subTest(slug=slug):
@@ -93,6 +102,7 @@ class PostURLTests(TestCase):
             PostURLTests.profile_url: 'posts/profile.html',
             PostURLTests.create_url: 'posts/create_post.html',
             PostURLTests.post_edit_url: 'posts/create_post.html',
+            PostURLTests.follow_index_url: 'posts/follow.html',
         }
         for url, template in url_names_templates.items():
             with self.subTest(url=url):
@@ -105,3 +115,11 @@ class PostURLTests(TestCase):
             PostURLTests.comment_url, follow=True
         )
         self.assertRedirects(response, PostURLTests.post_url)
+
+    def test_redirect_follow_unfollow_on_post_index(self):
+        """Проверяем переадресацию на follow_index после подписки/отписки"""
+        request_list = [PostURLTests.follow_url, PostURLTests.unfollow_url,]
+        for request in request_list:
+            with self.subTest(request=request):
+                response = self.authorized_client.get(request, follow=True)
+                self.assertRedirects(response, PostURLTests.follow_index_url)
