@@ -27,12 +27,19 @@ def group_posts(request, slug):
 
 
 def profile(request, username):
-    author = User.objects.get(username=username)
+    author = get_object_or_404(User, username=username)
     post_list = author.posts.all()
     page_obj = pag(request, post_list)
+    following = False
+    if request.user.is_authenticated:
+        following = Follow.objects.filter(
+            user=request.user,
+            author=author,
+        ).exists()
     context = {
         'author': author,
         'page_obj': page_obj,
+        'following': following,
     }
     return render(request, 'posts/profile.html', context)
 
@@ -99,27 +106,18 @@ def add_comment(request, post_id):
 
 @login_required
 def follow_index(request):
-    follows = get_object_or_404(Follow, user=request.user)
-    authors = follows.
-    post_list = 
+    post_list = Post.objects.filter(author__following__user=request.user)
+    page_obj = pag(request, post_list)
     context = {
         'page_obj': page_obj,
     }
     return render(request, 'posts/follow.html', context)
 
-    post_list = Post.objects.all().select_related('group', 'author')
-    page_obj = pag(request, post_list)
-    context = {
-        'page_obj': page_obj,
-    }
-    return render(request, 'posts/index.html', context)
-
-
 @login_required
 def profile_follow(request, username):
     author = get_object_or_404(User, username=username)
     if author != request.user:
-        Follow.objects.get_or_create(user=request.user, author = author)
+        Follow.objects.get_or_create(user=request.user, author=author)
     return redirect('posts:follow_index')
 
 @login_required
